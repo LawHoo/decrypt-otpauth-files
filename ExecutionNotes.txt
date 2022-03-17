@@ -1,0 +1,34 @@
+Use Ubuntu 20.04
+Edit Software Update settings to enable proprietary packages
+sudo apt-get update
+sudo apt-get install p7zip-full
+sudo snap install p7zip-desktop
+sudo apt install git
+git clone https://github.com/LawHoo/decrypt-otpauth-files.git
+cd decrypt-otpauth-files
+sudo apt install pipenv
+
+### DISCONNECT FROM INTERNET FOR MAXIMUM SECURITY
+
+cd decrypt-otpauth-files
+pipenv --python /usr/bin/python3.8
+pipenv --rm
+pipenv install
+pipenv shell
+
+### The original version of decrypt_otpauth.py required you to keep hitting "Enter" once for each OTP entry (whether the results were being displayed or saved to a file)
+### until the terminal prompt returns (once per OTP entry in the database)
+### To avoid that, run decrypt_otpauth_nopause.py
+
+### First, run through and save as PDF
+python3 decrypt_otpauth.py decrypt_backup --encrypted-otpauth-backup backup-1.1.otpauthdb --pdf-out OTPdecrypted.pdf
+
+### Second, run through and save the output to a file. 
+python3 decrypt_otpauth_export_to_file.py decrypt_backup --encrypted-otpauth-backup backup-1.1.otpauthdb > OTPdecrypted.txt
+
+### Then, can run through and view the QR codes:
+python3 decrypt_otpauth_nopause.py decrypt_backup --encrypted-otpauth-backup backup-1.1.otpauthdb
+
+### Open p7zip desktop and encrypt the files using the normal settings (be sure to check "Encrypt file names")
+
+e0757ffcca4e97950c6a2d21116d64e3c810948b29c57cfbd3a90a76a082d7e9

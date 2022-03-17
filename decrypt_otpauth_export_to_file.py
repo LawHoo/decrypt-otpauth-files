@@ -2,7 +2,6 @@ import base64
 import click
 import getpass
 import hashlib
-from io import BytesIO
 
 from enum import Enum
 from urllib.parse import quote
@@ -17,9 +16,6 @@ from Crypto.Cipher import AES
 from rncryptor import RNCryptor
 from rncryptor import bord
 
-import PIL
-from reportlab.platypus import SimpleDocTemplate, Image, BalancedColumns, Paragraph, Flowable
-from reportlab.lib.styles import getSampleStyleSheet
 
 class Type(Enum):
     Unknown = 0
@@ -195,41 +191,12 @@ class DangerousUnarchive(archiver.Unarchive):
 
 def render_qr_to_terminal(otp_uri, type, issuer, label):
     qr = pyqrcode.create(otp_uri, error="L")
-    click.echo("")
+    #click.echo("")
     click.echo(f'{type}: {issuer} - {label}')
     click.echo(otp_uri)
-    click.echo(qr.terminal(quiet_zone=4))
+    #click.echo(qr.terminal(quiet_zone=4))
     click.echo("")
 
-def write_accounts_to_pdf(accounts, pdf_path):
-    class CaptionedQr(Flowable):
-        def __init__(self, img, caption):
-            self.img = img
-            self.caption = caption
-            self.width = 120
-            self.img_height = 120
-            self.height = 160
-            self.caption_line_padding = 10
-        def draw(self):
-            self.canv.drawInlineImage(self.img, 0, 0, self.width, self.img_height)
-            textobj = self.canv.beginText(0, -self.caption_line_padding)
-            # Decide whether to wrap to next line after writing each char
-            for char in self.caption:
-                textobj.textOut(char)
-                if textobj.getX() > self.width:
-                    textobj.moveCursor(0, self.caption_line_padding)
-            self.canv.drawText(textobj)
-
-    pdf = SimpleDocTemplate(pdf_path)
-    flowables = []
-    for index, account in enumerate(accounts):
-        b = BytesIO()
-        qr = pyqrcode.create(account.otp_uri(), error="L")
-        qr.png(b, 5)
-        caption = f'{account.issuer} - {account.label}'
-        img = PIL.Image.open(b)
-        flowables.append(CaptionedQr(img, caption))
-    pdf.build([BalancedColumns(flowables, 3)])
 
 @click.group()
 def cli():
@@ -241,10 +208,7 @@ def cli():
               help="path to your encrypted OTP Auth account (.otpauth)",
               required=True,
               type=click.File('rb'))
-@click.option('--pdf-out',
-              help="path to output an PDF file instead of printing to the terminal",
-              required=False)
-def decrypt_account(encrypted_otpauth_account, pdf_out):
+def decrypt_account(encrypted_otpauth_account):
     # Get password from user
     password = getpass.getpass(f'Password for export file {encrypted_otpauth_account.name}: ')
 
@@ -264,13 +228,10 @@ def decrypt_account(encrypted_otpauth_account, pdf_out):
     elif archive['Version'] == 1.2:
         account = decrypt_account_12(archive, password)
     else:
-        click.echo(f'Encountered unknown file version: {archive["Version"]}')
+        click.echo(f'Encountered unknow file version: {archive["Version"]}')
         return
 
-    if not pdf_out:
-        render_qr_to_terminal(account.otp_uri(), account.type, account.issuer, account.label)
-    else:
-        write_accounts_to_pdf([account], pdf_out)
+    render_qr_to_terminal(account.otp_uri(), account.type, account.issuer, account.label)
 
 
 def decrypt_account_11(archive, password):
@@ -306,10 +267,7 @@ def decrypt_account_12(archive, password):
               help="path to your encrypted OTP Auth backup (.otpauthdb)",
               required=True,
               type=click.File('rb'))
-@click.option('--pdf-out',
-              help="path to output an PDF file instead of printing to the terminal",
-              required=False)
-def decrypt_backup(encrypted_otpauth_backup, pdf_out):
+def decrypt_backup(encrypted_otpauth_backup):
     # Get password from user
     password = getpass.getpass(f'Password for export file {encrypted_otpauth_backup.name}: ')
 
@@ -329,15 +287,12 @@ def decrypt_backup(encrypted_otpauth_backup, pdf_out):
     elif archive['Version'] == 1.1:
         accounts = decrypt_backup_11(archive, password)
     else:
-        click.echo(f'Encountered unknown file version: {archive["Version"]}')
+        click.echo(f'Encountered unknow file version: {archive["Version"]}')
         return
 
-    if not pdf_out:
-        for account in accounts:
-            render_qr_to_terminal(account.otp_uri(), account.type, account.issuer, account.label)
-            input("Press Enter to continue...")
-    else:
-        write_accounts_to_pdf(accounts, pdf_out)
+    for account in accounts:
+        render_qr_to_terminal(account.otp_uri(), account.type, account.issuer, account.label)
+        #input("Press Enter to continue...")
 
 
 def decrypt_backup_10(archive, password):
