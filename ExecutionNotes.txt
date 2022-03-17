@@ -1,4 +1,4 @@
-Use Ubuntu 20.04
+Use Ubuntu 20.04.1 (not yet tested on Ubuntu 20.04.4)
 Edit Software Update settings to enable proprietary packages
 sudo apt-get update
 sudo apt-get install p7zip-full
